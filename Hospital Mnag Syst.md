@@ -1,207 +1,107 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[codz]
-*$py.class
+-- Create Database
+CREATE DATABASE hospitalDB;
 
-# C extensions
-*.so
+-- Use Database
+USE hospitalDB;
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+-- Create Doctors Table
+CREATE TABLE Doctors (
+    doctor_id INT PRIMARY KEY,
+    doctor_name VARCHAR(50),
+    specialization VARCHAR(50),
+    max_patients_per_day INT,
+    booked_patients INT
+);
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+-- Create Patients Table
+CREATE TABLE Patients (
+    patient_id INT PRIMARY KEY,
+    patient_name VARCHAR(50)
+);
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+-- Create Appointments Table
+CREATE TABLE Appointments (
+    appointment_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT,
+    doctor_id INT,
+    appointment_date DATE,
+    FOREIGN KEY (patient_id) REFERENCES Patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id)
+);
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py.cover
-.hypothesis/
-.pytest_cache/
-cover/
+-- Insert Sample Doctors
+INSERT INTO Doctors VALUES
+(1, 'Dr. Sharma', 'Cardiology', 2, 1),
+(2, 'Dr. Mehta', 'Neurology', 3, 3),
+(3, 'Dr. Reddy', 'Orthopedic', 4, 2),
+(4, 'Dr. Khan', 'Dermatology', 2, 0),
+(5, 'Dr. Priya', 'Pediatrics', 5, 4);
 
-# Translations
-*.mo
-*.pot
+-- Insert Sample Patients
+INSERT INTO Patients VALUES
+(1, 'Rahul'),
+(2, 'Sneha'),
+(3, 'Amit'),
+(4, 'Pooja'),
+(5, 'Kiran'),
+(6, 'Neha'),
+(7, 'Arjun'),
+(8, 'Anjali'),
+(9, 'Vikram'),
+(10, 'Priya');
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+-- Create Stored Procedure
+DELIMITER //
 
-# Flask stuff:
-instance/
-.webassets-cache
+CREATE PROCEDURE book_appointment(
+    IN p_patient_id INT,
+    IN p_doctor_id INT,
+    IN p_appointment_date DATE
+)
+BEGIN
+    DECLARE max_slots INT;
+    DECLARE booked_slots INT;
 
-# Scrapy stuff:
-.scrapy
+    -- Get doctor slot details
+    SELECT max_patients_per_day, booked_patients
+    INTO max_slots, booked_slots
+    FROM Doctors
+    WHERE doctor_id = p_doctor_id;
 
-# Sphinx documentation
-docs/_build/
+    -- Check availability
+    IF booked_slots < max_slots THEN
 
-# PyBuilder
-.pybuilder/
-target/
+        -- Insert appointment
+        INSERT INTO Appointments(patient_id, doctor_id, appointment_date)
+        VALUES (p_patient_id, p_doctor_id, p_appointment_date);
 
-# Jupyter Notebook
-.ipynb_checkpoints
+        -- Update booked patients count
+        UPDATE Doctors
+        SET booked_patients = booked_patients + 1
+        WHERE doctor_id = p_doctor_id;
 
-# IPython
-profile_default/
-ipython_config.py
+        -- Success Message
+        SELECT 'Appointment Booked Successfully' AS Message;
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+    ELSE
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+        -- Doctor Full Message
+        SELECT 'Doctor not available today' AS Message;
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
+    END IF;
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
-#poetry.toml
+END //
 
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-#pdm.lock
-#pdm.toml
-.pdm-python
-.pdm-build/
+DELIMITER ;
 
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-#pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi
+-- Task 4: Call Procedure (Doctor has slots available)
+CALL book_appointment(3,1,'2026-03-15');
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
+-- Task 5: Test Doctor Full Situation
+CALL book_appointment(4,2,'2026-03-15');
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
+-- Display Appointments
+SELECT * FROM Appointments;
 
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
-
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
-
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
-
-# Ruff stuff:
-.ruff_cache/
-
-# PyPI configuration file
-.pypirc
-
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
-
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
+-- Display Doctors Table
+SELECT * FROM Doctors;
